@@ -1,5 +1,6 @@
 import numpy as np
-from corner_finder import closest_node
+
+from transformer.utils import closest_node
 
 
 def test_closest_node():

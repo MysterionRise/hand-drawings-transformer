@@ -1,5 +1,4 @@
 import numpy as np
-
 from corner_finder import closest_node
 
 

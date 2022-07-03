@@ -9,13 +9,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 
-from transformer.image import prepare, corners, process, fix_colors
+from transformer.image import corners, fix_colors, prepare, process
 from transformer.utils import save_file, upload_file
 
-URL = os.getenv('URL', default='http://localhost:8000')
-UPLOAD_URL = os.getenv('UPLOAD_URL')
-EDITOR_URL = os.getenv('EDITOR_URL', '*')
-TOKEN = os.getenv('TOKEN')
+URL = os.getenv("URL", default="http://localhost:8000")
+UPLOAD_URL = os.getenv("UPLOAD_URL")
+EDITOR_URL = os.getenv("EDITOR_URL", "*")
+TOKEN = os.getenv("TOKEN")
 
 
 app = FastAPI()
@@ -52,7 +52,7 @@ app.add_middleware(
 @app.post("/upload")
 async def upload(file: UploadFile):
     contents = await file.read()
-    filename = "./static/images/{}".format(file.filename)
+    filename = f"./static/images/{file.filename}"
     save_file(filename, contents)
     prep = prepare(filename)
     height, width = prep.shape[:2]
@@ -61,21 +61,21 @@ async def upload(file: UploadFile):
         coordinates.append(int(c[0]))
         coordinates.append(int(c[1]))
     return {
-        "url": "{url}/static/images/{file}".format(file=file.filename, url=URL),
+        "url": f"{URL}/static/images/{file.filename}",
         "coordinates": coordinates,
         "width": width,
-        "height": height
+        "height": height,
     }
 
 
 @app.post("/process")
 async def process_img(file: UploadFile):
     contents = await file.read()
-    filename = "./static/images/{}".format(file.filename)
+    filename = f"./static/images/{file.filename}"
     save_file(filename, contents)
-    result = process(filename, 'static/images')
+    result = process(filename, "static/images")
     return {
-        "url": "{url}/{file}".format(file=result, url=URL),
+        "url": f"{URL}/{result}",
     }
 
 
@@ -83,12 +83,12 @@ async def process_img(file: UploadFile):
 async def process_url(img: Img):
     a = urlparse(img.url)
     contents = requests.get(img.url).content
-    filename = "./static/images/{}".format(os.path.basename(a.path))
+    filename = f"./static/images/{os.path.basename(a.path)}"
     save_file(filename, contents)
-    result = process(filename, 'static/images')
+    result = process(filename, "static/images")
     upload_file(result, img.record, TOKEN, UPLOAD_URL)
     return {
-        "url": "{url}/{file}".format(file=result, url=URL),
+        "url": f"{URL}/{result}",
     }
 
 
@@ -96,14 +96,12 @@ async def process_url(img: Img):
 async def fix_colors_service(img: Img):
     a = urlparse(img.url)
     contents = requests.get(img.url).content
-    filename = "./static/images/{}".format(os.path.basename(a.path))
+    filename = f"./static/images/{os.path.basename(a.path)}"
     save_file(filename, contents)
-    result = fix_colors(filename, 'static/images')
+    result = fix_colors(filename, "static/images")
     upload_file(result, img.record, TOKEN, UPLOAD_URL)
-    return {
-        "url": "{url}/{file}".format(file=result, url=URL),
-    }
+    return {"url": f"{URL}/{result}"}
 
 
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8001, debug=True)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8001, debug=True)

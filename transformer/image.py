@@ -1,7 +1,13 @@
+import binascii
 from itertools import chain
 from os.path import basename, dirname, join
 
 import cv2
+import numpy as np
+import scipy
+import scipy.cluster
+import scipy.misc
+from PIL import Image as PilImage
 from wand.image import Image
 
 from transformer.utils import closest_node, file_name
@@ -95,6 +101,73 @@ def corners(prep_image):
         tuple(closest_node((width, height), points)),
         tuple(closest_node((width, 0), points)),
     )
+
+
+def closest(colours, colour, colours_names):
+    colours = np.array(colours)
+    colour = np.array(colour)
+    distances = np.sqrt(np.sum((colours - colour) ** 2, axis=1))
+    index_of_smallest = np.where(distances == np.amin(distances))
+    return colours_names[index_of_smallest[0][0]]
+
+
+def closet_12_colour(colour):
+    return closest(
+        [
+            [255, 0, 0],
+            [255, 128, 0],
+            [255, 255, 0],
+            [128, 255, 0],
+            [0, 255, 0],
+            [0, 255, 128],
+            [0, 255, 255],
+            [0, 128, 255],
+            [0, 0, 255],
+            [128, 0, 255],
+            [255, 0, 255],
+            [255, 0, 128],
+        ],
+        colour,
+        [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green-1",
+            "Green-2",
+            "Green-3",
+            "Cyan",
+            "Light Blue",
+            "Blue",
+            "Purple",
+            "Magenta",
+            "Pink",
+        ],
+    )
+
+
+def colour_detection(image_path):
+    NUM_CLUSTERS = 5
+
+    print("reading image")
+    im = PilImage.open(image_path)
+    ar = np.asarray(im)
+    shape = ar.shape
+    ar = ar.reshape(scipy.product(shape[:2]), shape[2]).astype(float)
+
+    print("finding clusters")
+    codes, _ = scipy.cluster.vq.kmeans2(ar, NUM_CLUSTERS, minit="points")
+    print("cluster centres:\n", codes)
+
+    vecs, _ = scipy.cluster.vq.vq(ar, codes)  # assign codes
+    counts, _ = scipy.histogram(vecs, len(codes))  # count occurrences
+
+    indicies_max = np.argpartition(counts, -5)[-5:]
+    for index_max in indicies_max:
+        peak = codes[index_max]
+        colour = binascii.hexlify(bytearray(int(c) for c in peak)).decode("ascii")
+        print(
+            f"most frequent is {colour} and closest is {closet_12_colour(list(map(int, peak)))}"
+        )
 
 
 def corners_lab(prep_image, original_name: str):

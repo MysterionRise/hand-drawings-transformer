@@ -12,3 +12,5 @@ python-multipart
 pydantic
 numpy
 requests
+Pillow
+scipy

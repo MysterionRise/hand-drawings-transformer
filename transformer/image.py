@@ -168,6 +168,7 @@ def colour_detection(image_path):
         print(
             f"most frequent is {colour} and closest is {closet_12_colour(list(map(int, peak)))}"
         )
+    # TODO need to return it somehow? as RGB tuples?
 
 
 def corners_lab(prep_image, original_name: str):

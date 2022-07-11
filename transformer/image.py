@@ -145,9 +145,7 @@ def closet_12_colour(colour):
     )
 
 
-def colour_detection(image_path):
-    NUM_CLUSTERS = 5
-
+def colour_detection(image_path, number_of_colours=5):
     print("reading image")
     im = PilImage.open(image_path)
     ar = np.asarray(im)
@@ -155,20 +153,23 @@ def colour_detection(image_path):
     ar = ar.reshape(scipy.product(shape[:2]), shape[2]).astype(float)
 
     print("finding clusters")
-    codes, _ = scipy.cluster.vq.kmeans2(ar, NUM_CLUSTERS, minit="points")
+    codes, _ = scipy.cluster.vq.kmeans2(ar, number_of_colours, minit="points")
     print("cluster centres:\n", codes)
 
     vecs, _ = scipy.cluster.vq.vq(ar, codes)  # assign codes
     counts, _ = scipy.histogram(vecs, len(codes))  # count occurrences
 
-    indicies_max = np.argpartition(counts, -5)[-5:]
+    indicies_max = np.argpartition(counts, -number_of_colours)[-number_of_colours:]
+    detected_colours = set()
     for index_max in indicies_max:
         peak = codes[index_max]
         colour = binascii.hexlify(bytearray(int(c) for c in peak)).decode("ascii")
         print(
             f"most frequent is {colour} and closest is {closet_12_colour(list(map(int, peak)))}"
         )
+        detected_colours.add(closet_12_colour(list(map(int, peak))))
     # TODO need to return it somehow? as RGB tuples?
+    return detected_colours
 
 
 def corners_lab(prep_image, original_name: str):
